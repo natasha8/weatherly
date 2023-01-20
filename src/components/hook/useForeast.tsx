@@ -1,5 +1,5 @@
 import { useState, ChangeEvent, useEffect } from "react"
-import { forecastType, optionType } from "../types/types"
+import { forecastType, geoType, optionType } from "../types/types"
 
 export const useForecast = () => {
 
@@ -7,6 +7,46 @@ export const useForecast = () => {
     const [options, setOptions] = useState<[]>([])
     const [selectedCity, setSelectedCity] = useState<optionType | null>(null)
     const [forecast, setForecast] = useState<forecastType | null>(null)
+
+    const [location, setLocation] = useState<geoType | null>(null);
+    const [info, setInfo] = useState<forecastType | null>(null);
+
+
+    useEffect(() => {
+        if (location === null) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position: GeolocationPosition) => {
+                        setLocation({
+                            coords: {
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude,
+                            },
+                        });
+                    }
+                );
+            }
+        }
+    }, [location]);
+
+    const getInfo = async () => {
+        if (location !== null) {
+            try {
+                const res = await fetch(
+                    `https://api.openweathermap.org/data/2.5/weather?lat=${location.coords.latitude
+                    }&lon=${location.coords.longitude}&units=metric&appid=${import.meta.env.VITE_WEATHER_API
+                    }`
+                );
+
+                const data = await res.json();
+                setInfo(data);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    };
+
+
 
 
     const onInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -19,7 +59,7 @@ export const useForecast = () => {
 
     const getOptions = async (option: string) => {
         try {
-            const res = await fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${option}&limit=5&appid=${import.meta.env.VITE_WEATHER_API}`)
+            const res = await fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${option}&limit=10&appid=${import.meta.env.VITE_WEATHER_API}`)
             const data = await res.json()
             setOptions(data)
         } catch (error) {
@@ -45,7 +85,7 @@ export const useForecast = () => {
 
             const fcData = {
                 ...data.city,
-                list: data.list.slice(0, 7)
+                list: data.list.slice(0, 12)
             }
             setForecast(fcData)
             setCity("")
@@ -68,6 +108,11 @@ export const useForecast = () => {
             setCity(selectedCity.name)
             setOptions([])
         }
-    }, [selectedCity])
-    return { city, options, forecast, onInputChange, onSelect, onSubmit }
+
+        if (location !== null) {
+            getInfo();
+        }
+
+    }, [selectedCity, location])
+    return { city, options, forecast, info, onInputChange, onSelect, onSubmit, getInfo }
 }

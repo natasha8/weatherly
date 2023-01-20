@@ -4,7 +4,7 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                lorina: ["Rubik Moonrocks", "cursive"],
+                lorina: ["Megrim", "cursive"],
             },
             backgroundImage: {
                 sunny: "url('/sunny.png')",
